@@ -9772,10 +9772,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_core_updater_download);
 #endif
             break;
-         case FILE_TYPE_CORE_MANUFACTURER_HEADER:
-         case FILE_TYPE_CORE_CONSOLE_HEADER:
-            /* Prevent interaction with WizModl headers */
-            break;
          case FILE_TYPE_SIDELOAD_CORE:
             BIND_ACTION_OK(cbs, action_ok_sideload_core);
             break;

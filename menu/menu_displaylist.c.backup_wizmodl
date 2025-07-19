@@ -13505,51 +13505,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               continue;
                         }
 
-                        /* Enhanced menu display with dual header support */
-                        if (entry->is_manufacturer_header)
+                        if (menu_entries_append(info->list,
+                                 entry->remote_filename,
+                                 "",
+                                 MENU_ENUM_LABEL_CORE_UPDATER_ENTRY,
+                                 FILE_TYPE_DOWNLOAD_CORE, 0, 0, NULL))
                         {
-                           /* Add manufacturer header entry */
-                           if (menu_entries_append(info->list,
-                                    entry->display_name,
-                                    "",
-                                    MENU_ENUM_LABEL_CORE_MANUFACTURER_HEADER,
-                                    FILE_TYPE_CORE_MANUFACTURER_HEADER, 0, 0, NULL))
-                           {
-                              file_list_set_alt_at_offset(
-                                    info->list, menu_index, entry->display_name);
-                              menu_index++;
-                              count++;
-                           }
-                        }
-                        else if (entry->is_console_header)
-                        {
-                           /* Add console model header entry */
-                           if (menu_entries_append(info->list,
-                                    entry->display_name,
-                                    "",
-                                    MENU_ENUM_LABEL_CORE_CONSOLE_HEADER,
-                                    FILE_TYPE_CORE_CONSOLE_HEADER, 0, 0, NULL))
-                           {
-                              file_list_set_alt_at_offset(
-                                    info->list, menu_index, entry->display_name);
-                              menu_index++;
-                              count++;
-                           }
-                        }
-                        else
-                        {
-                           /* Add regular core entry */
-                           if (menu_entries_append(info->list,
-                                    entry->remote_filename,
-                                    "",
-                                    MENU_ENUM_LABEL_CORE_UPDATER_ENTRY,
-                                    FILE_TYPE_DOWNLOAD_CORE, 0, 0, NULL))
-                           {
-                              file_list_set_alt_at_offset(
-                                    info->list, menu_index, entry->display_name);
-                              menu_index++;
-                              count++;
-                           }
+                           file_list_set_alt_at_offset(
+                                 info->list, menu_index, entry->display_name);
+
+                           menu_index++;
+                           count++;
                         }
                      }
                   }
