@@ -74,8 +74,6 @@ enum msg_file_type
    FILE_TYPE_IMAGEVIEWER,
    FILE_TYPE_REMAP,
    FILE_TYPE_DOWNLOAD_CORE,
-   FILE_TYPE_CORE_MANUFACTURER_HEADER,    /* WizModl manufacturer headers */
-   FILE_TYPE_CORE_CONSOLE_HEADER,         /* WizModl console model headers */
    FILE_TYPE_DOWNLOAD_URL,
    FILE_TYPE_DOWNLOAD_CORE_CONTENT,
    FILE_TYPE_DOWNLOAD_CORE_INFO,
@@ -173,6 +171,10 @@ enum msg_file_type
    FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES,
 
    FILE_TYPE_OSK_OVERLAY,
+
+   /* WizModl dual-level grouping headers */
+   FILE_TYPE_CORE_MANUFACTURER_HEADER,    /* WizModl manufacturer headers */
+   FILE_TYPE_CORE_CONSOLE_HEADER,         /* WizModl console model headers */
 
    FILE_TYPE_LAST
 };

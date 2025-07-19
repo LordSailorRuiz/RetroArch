@@ -3,7 +3,11 @@
     "allow": [
       "Bash(cp:*)",
       "Bash(make:*)",
-      "Bash(gcc:*)"
+      "Bash(gcc:*)",
+      "Bash(grep:*)",
+      "Bash(./test_enum)",
+      "Bash(rm:*)",
+      "Bash(timeout:*)"
     ],
     "deny": []
   }
