@@ -906,8 +906,7 @@ static const core_metadata_wizmodl_t* get_core_metadata_wizmodl(const char *disp
    /* Find the best match based on core name pattern */
    for (i = 0; i < (int)(sizeof(core_metadata_wizmodl_db)/sizeof(core_metadata_wizmodl_db[0]) - 1); i++) {
       if (core_metadata_wizmodl_db[i].core_name && 
-          (strstr(display_name, core_metadata_wizmodl_db[i].core_name) || 
-           strcasestr(display_name, core_metadata_wizmodl_db[i].core_name))) {
+          strstr(display_name, core_metadata_wizmodl_db[i].core_name)) {
          return &core_metadata_wizmodl_db[i];
       }
    }
