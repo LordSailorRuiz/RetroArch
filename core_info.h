@@ -151,6 +151,37 @@ struct core_info_state
 
 typedef struct core_info_state core_info_state_t;
 
+/* Hierarchical core display structures */
+typedef struct core_entry {
+    char *display_name;
+    char *core_name;
+    char *emulator_name;
+    char *version;
+    char *path;
+    struct core_entry *next;
+} core_entry_t;
+
+typedef struct core_subgroup {
+    char console_name[64];
+    int release_year;
+    core_entry_t *cores;
+    int core_count;
+    struct core_subgroup *next;
+} core_subgroup_t;
+
+typedef struct core_group_header {
+    char manufacturer[64];
+    core_subgroup_t *subgroups;
+    int subgroup_count;
+    struct core_group_header *next;
+} core_group_header_t;
+
+typedef struct {
+    core_group_header_t *groups;
+    int group_count;
+    int total_cores;
+} hierarchical_core_list_t;
+
 /* Non-reentrant, does not allocate. Returns pointer to internal state. */
 void core_info_list_get_supported_cores(core_info_list_t *list,
       const char *path, const core_info_t **infos, size_t *num_infos);
@@ -198,6 +229,8 @@ bool core_info_database_supports_content_path(const char *database_path, const c
 bool core_info_database_match_archive_member(const char *database_path);
 
 void core_info_qsort(core_info_list_t *core_info_list, enum core_info_list_qsort_type qsort_type);
+
+void core_info_qsort_hierarchical(core_info_list_t *core_info_list);
 
 bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *out_info, const char *core_path);
@@ -251,6 +284,15 @@ bool core_info_core_file_id_is_equal(const char *core_path_a, const char *core_p
  * next time that core info is initialised with
  * caching enabled */
 bool core_info_cache_force_refresh(const char *path_info);
+
+/* System database functions for hierarchical core display */
+const char* get_system_manufacturer(const char* systemname);
+const char* get_console_name(const char* systemname);
+int get_system_release_year(const char* systemname);
+
+/* Core name extraction functions */
+const char* extract_emulator_name(const char* display_name);
+const char* extract_version(const char* display_name);
 
 RETRO_END_DECLS
 

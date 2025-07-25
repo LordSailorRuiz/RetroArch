@@ -1192,38 +1192,47 @@ static unsigned menu_displaylist_parse_core_backup_list(
    return count;
 }
 
-static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
-      bool kiosk_mode_enable)
+/* Hierarchical core display function */
+static unsigned menu_displaylist_parse_core_hierarchical(file_list_t *list)
 {
    unsigned count                   = 0;
    core_info_list_t *core_info_list = NULL;
-
+   const char *current_manufacturer = NULL;
+   const char *current_console      = NULL;
+   int current_year                 = 0;
+   
    /* Get core list */
    core_info_get_list(&core_info_list);
-
+   
    if (core_info_list)
    {
       size_t i;
-      size_t menu_index                = 0;
-      menu_search_terms_t *search_terms= menu_entries_search_get_terms();
-
-      /* Sort cores alphabetically */
-      core_info_qsort(core_info_list, CORE_INFO_LIST_SORT_DISPLAY_NAME);
-
+      menu_search_terms_t *search_terms = menu_entries_search_get_terms();
+      
+      /* Sort cores hierarchically */
+      core_info_qsort_hierarchical(core_info_list);
+      
       /* Loop through cores */
       for (i = 0; i < core_info_list->count; i++)
       {
          core_info_t *core_info = core_info_get(core_info_list, i);
-
+         
          if (core_info)
          {
-            /* If a search is active, skip non-matching
-             * entries */
+            const char *manufacturer = get_system_manufacturer(core_info->systemname);
+            const char *console_name = get_console_name(core_info->systemname);
+            const char *emulator_name = extract_emulator_name(core_info->display_name);
+            const char *version = extract_version(core_info->display_name);
+            int release_year = get_system_release_year(core_info->systemname);
+            char formatted_core_name[256];
+            char console_header[128];
+            
+            /* If a search is active, skip non-matching entries */
             if (search_terms)
             {
                bool entry_valid = true;
                size_t j;
-
+               
                for (j = 0; j < search_terms->size; j++)
                {
                   const char *search_term = search_terms->terms[j];
@@ -1235,26 +1244,83 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
                      break;
                   }
                }
-
+               
                if (!entry_valid)
                   continue;
             }
-
+            
+            /* Add manufacturer header if changed */
+            if (!string_is_equal(manufacturer, current_manufacturer))
+            {
+               char manufacturer_header[128];
+               snprintf(manufacturer_header, sizeof(manufacturer_header), 
+                       "--%s--", manufacturer);
+               
+               if (menu_entries_append(list,
+                        manufacturer_header,
+                        "",
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_NO_ITEM, 0, 0, NULL))
+                  count++;
+               
+               current_manufacturer = manufacturer;
+               current_console = NULL;  /* Reset console when manufacturer changes */
+               current_year = 0;
+            }
+            
+            /* Add console subheader if changed */
+            if (!string_is_equal(console_name, current_console) || release_year != current_year)
+            {
+               if (release_year > 0)
+                  snprintf(console_header, sizeof(console_header), 
+                          "  - %s (%d) -", console_name, release_year);
+               else
+                  snprintf(console_header, sizeof(console_header), 
+                          "  - %s -", console_name);
+               
+               if (menu_entries_append(list,
+                        console_header,
+                        "",
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_NO_ITEM, 0, 0, NULL))
+                  count++;
+               
+               current_console = console_name;
+               current_year = release_year;
+            }
+            
+            /* Format core name as "Emulator – version" */
+            if (!string_is_empty(version))
+               snprintf(formatted_core_name, sizeof(formatted_core_name), 
+                       "    %s – %s", emulator_name, version);
+            else
+               snprintf(formatted_core_name, sizeof(formatted_core_name), 
+                       "    %s", emulator_name);
+            
+            /* Add core entry */
             if (menu_entries_append(list,
+                     formatted_core_name,
                      core_info->path,
-                     "",
                      MENU_ENUM_LABEL_CORE_MANAGER_ENTRY,
                      MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS,
                      0, 0, NULL))
-            {
-               file_list_set_alt_at_offset(list, menu_index,
-                     core_info->display_name);
-               menu_index++;
                count++;
-            }
          }
       }
    }
+   
+   return count;
+}
+
+static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
+      bool kiosk_mode_enable)
+{
+   unsigned count = 0;
+   
+   /* Use hierarchical display instead of flat list */
+   count = menu_displaylist_parse_core_hierarchical(list);
+   
+   /* Legacy flat display code removed - now using hierarchical display */
 
 #ifndef IOS
    /* Add 'sideload core' entry */

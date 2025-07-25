@@ -3058,3 +3058,291 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
 #endif
    return false;
 }
+
+/*****************************/
+/* System Database Functions */
+/*****************************/
+
+typedef struct {
+   const char* systemname;
+   const char* manufacturer;
+   const char* console_name;
+   int release_year;
+} system_info_t;
+
+static const system_info_t system_database[] = {
+   /* Nintendo */
+   {"Nintendo - Nintendo Entertainment System", "Nintendo", "NES", 1983},
+   {"Nintendo - Family Computer Disk System", "Nintendo", "Famicom Disk System", 1986},
+   {"Nintendo - Super Nintendo Entertainment System", "Nintendo", "SNES", 1990},
+   {"Nintendo - Game Boy", "Nintendo", "Game Boy", 1989},
+   {"Nintendo - Game Boy Color", "Nintendo", "Game Boy Color", 1998},
+   {"Nintendo - Game Boy Advance", "Nintendo", "Game Boy Advance", 2001},
+   {"Nintendo - Nintendo 64", "Nintendo", "Nintendo 64", 1996},
+   {"Nintendo - Nintendo GameCube", "Nintendo", "GameCube", 2001},
+   {"Nintendo - Nintendo DS", "Nintendo", "Nintendo DS", 2004},
+   {"Nintendo - Nintendo DSi", "Nintendo", "Nintendo DSi", 2008},
+   {"Nintendo - Nintendo 3DS", "Nintendo", "Nintendo 3DS", 2011},
+   {"Nintendo - Wii", "Nintendo", "Wii", 2006},
+   {"Nintendo - Wii U", "Nintendo", "Wii U", 2012},
+   {"Nintendo - Switch", "Nintendo", "Switch", 2017},
+   {"Nintendo - Virtual Boy", "Nintendo", "Virtual Boy", 1995},
+   {"Nintendo - Pokemon Mini", "Nintendo", "Pokemon Mini", 2001},
+
+   /* Sony */
+   {"Sony - PlayStation", "Sony", "PlayStation", 1994},
+   {"Sony - PlayStation 2", "Sony", "PlayStation 2", 2000},
+   {"Sony - PlayStation 3", "Sony", "PlayStation 3", 2006},
+   {"Sony - PlayStation Portable", "Sony", "PlayStation Portable", 2004},
+   {"Sony - PlayStation Vita", "Sony", "PlayStation Vita", 2011},
+
+   /* Sega */
+   {"Sega - Master System - Mark III", "Sega", "Master System", 1985},
+   {"Sega - Mega Drive - Genesis", "Sega", "Genesis/Mega Drive", 1988},
+   {"Sega - Game Gear", "Sega", "Game Gear", 1990},
+   {"Sega - Mega-CD - Sega CD", "Sega", "Sega CD", 1991},
+   {"Sega - 32X", "Sega", "32X", 1994},
+   {"Sega - Saturn", "Sega", "Saturn", 1994},
+   {"Sega - Dreamcast", "Sega", "Dreamcast", 1998},
+   {"Sega - SG-1000", "Sega", "SG-1000", 1983},
+
+   /* Microsoft */
+   {"Microsoft - Xbox", "Microsoft", "Xbox", 2001},
+   {"Microsoft - Xbox 360", "Microsoft", "Xbox 360", 2005},
+   {"Microsoft - MSX", "Microsoft", "MSX", 1983},
+   {"Microsoft - MSX2", "Microsoft", "MSX2", 1985},
+
+   /* Atari */
+   {"Atari - 2600", "Atari", "Atari 2600", 1977},
+   {"Atari - 5200", "Atari", "Atari 5200", 1982},
+   {"Atari - 7800", "Atari", "Atari 7800", 1986},
+   {"Atari - Jaguar", "Atari", "Jaguar", 1993},
+   {"Atari - Lynx", "Atari", "Lynx", 1989},
+   {"Atari - ST", "Atari", "Atari ST", 1985},
+
+   /* NEC */
+   {"NEC - PC Engine - TurboGrafx-16", "NEC", "TurboGrafx-16/PC Engine", 1987},
+   {"NEC - PC Engine CD - TurboGrafx-CD", "NEC", "TurboGrafx-CD", 1988},
+   {"NEC - PC Engine SuperGrafx", "NEC", "SuperGrafx", 1989},
+   {"NEC - PC-FX", "NEC", "PC-FX", 1994},
+   {"NEC - PC-98", "NEC", "PC-98", 1982},
+
+   /* SNK */
+   {"SNK - Neo Geo Pocket", "SNK", "Neo Geo Pocket", 1998},
+   {"SNK - Neo Geo Pocket Color", "SNK", "Neo Geo Pocket Color", 1999},
+   {"SNK - Neo Geo AES", "SNK", "Neo Geo AES", 1990},
+   {"SNK - Neo Geo MVS", "SNK", "Neo Geo MVS", 1990},
+   {"SNK - Neo Geo CD", "SNK", "Neo Geo CD", 1994},
+
+   /* Bandai */
+   {"Bandai - WonderSwan", "Bandai", "WonderSwan", 1999},
+   {"Bandai - WonderSwan Color", "Bandai", "WonderSwan Color", 2000},
+
+   /* Arcade */
+   {"MAME", "Arcade", "MAME", 1997},
+   {"FinalBurn Neo", "Arcade", "FinalBurn Neo", 2019},
+   {"Capcom - CPS1", "Capcom", "CPS1", 1988},
+   {"Capcom - CPS2", "Capcom", "CPS2", 1993},
+   {"Capcom - CPS3", "Capcom", "CPS3", 1996},
+
+   /* Other */
+   {"3DO", "3DO", "3DO", 1993},
+   {"Magnavox - Odyssey2", "Magnavox", "Odyssey2", 1978},
+   {"Mattel - Intellivision", "Mattel", "Intellivision", 1979},
+   {"Coleco - ColecoVision", "Coleco", "ColecoVision", 1982},
+   {"Amstrad - CPC", "Amstrad", "Amstrad CPC", 1984},
+   {"Commodore - 64", "Commodore", "Commodore 64", 1982},
+   {"Commodore - Amiga", "Commodore", "Amiga", 1985},
+   {"Sinclair - ZX Spectrum", "Sinclair", "ZX Spectrum", 1982},
+
+   {NULL, NULL, NULL, 0}  /* Sentinel */
+};
+
+const char* get_system_manufacturer(const char* systemname)
+{
+   const system_info_t* entry;
+   
+   if (!systemname)
+      return "Other";
+   
+   for (entry = system_database; entry->systemname; entry++)
+   {
+      if (string_is_equal(systemname, entry->systemname))
+         return entry->manufacturer;
+   }
+   
+   return "Other";
+}
+
+const char* get_console_name(const char* systemname)
+{
+   const system_info_t* entry;
+   
+   if (!systemname)
+      return "Unknown";
+   
+   for (entry = system_database; entry->systemname; entry++)
+   {
+      if (string_is_equal(systemname, entry->systemname))
+         return entry->console_name;
+   }
+   
+   return "Unknown";
+}
+
+int get_system_release_year(const char* systemname)
+{
+   const system_info_t* entry;
+   
+   if (!systemname)
+      return 0;
+   
+   for (entry = system_database; entry->systemname; entry++)
+   {
+      if (string_is_equal(systemname, entry->systemname))
+         return entry->release_year;
+   }
+   
+   return 0;
+}
+
+/* Extract clean emulator name from display name */
+const char* extract_emulator_name(const char* display_name)
+{
+   static char emulator_name[64];
+   const char* dash_pos;
+   const char* version_pos;
+   const char* start_pos;
+   size_t name_length;
+   
+   if (!display_name)
+      return "Unknown";
+   
+   /* Skip manufacturer and console parts by finding the last meaningful dash */
+   start_pos = display_name;
+   
+   /* Look for patterns like "Manufacturer - Console - Emulator" */
+   dash_pos = strstr(display_name, " - ");
+   if (dash_pos)
+   {
+      /* Skip first dash (manufacturer) */
+      start_pos = dash_pos + 3;
+      dash_pos = strstr(start_pos, " - ");
+      if (dash_pos)
+      {
+         /* Skip second dash (console) */
+         start_pos = dash_pos + 3;
+      }
+   }
+   
+   /* Remove version information (everything after first space) */
+   version_pos = strchr(start_pos, ' ');
+   if (version_pos)
+      name_length = version_pos - start_pos;
+   else
+      name_length = strlen(start_pos);
+   
+   /* Copy the extracted name */
+   if (name_length >= sizeof(emulator_name))
+      name_length = sizeof(emulator_name) - 1;
+   
+   strncpy(emulator_name, start_pos, name_length);
+   emulator_name[name_length] = '\0';
+   
+   return emulator_name;
+}
+
+/* Extract version from display name */
+const char* extract_version(const char* display_name)
+{
+   static char version[32];
+   const char* version_start;
+   const char* paren_pos;
+   size_t version_length;
+   
+   if (!display_name)
+      return "";
+   
+   /* Look for version in parentheses like "(v1.2.3)" */
+   paren_pos = strrchr(display_name, '(');
+   if (paren_pos)
+   {
+      version_start = paren_pos + 1;
+      paren_pos = strchr(version_start, ')');
+      if (paren_pos)
+      {
+         version_length = paren_pos - version_start;
+         if (version_length < sizeof(version))
+         {
+            strncpy(version, version_start, version_length);
+            version[version_length] = '\0';
+            return version;
+         }
+      }
+   }
+   
+   /* If no parentheses, look for version after the last space */
+   version_start = strrchr(display_name, ' ');
+   if (version_start && version_start[1] == 'v')
+   {
+      strlcpy(version, version_start + 1, sizeof(version));
+      return version;
+   }
+   
+   return "";
+}
+
+/* Hierarchical sorting comparison function */
+static int hierarchical_core_compare(const core_info_t *a, const core_info_t *b)
+{
+   const char* manufacturer_a;
+   const char* manufacturer_b;
+   const char* console_a;
+   const char* console_b;
+   int year_a, year_b;
+   int manufacturer_cmp;
+   
+   if (!a || !b)
+      return 0;
+   
+   /* Get manufacturer information */
+   manufacturer_a = get_system_manufacturer(a->systemname);
+   manufacturer_b = get_system_manufacturer(b->systemname);
+   
+   /* Compare by manufacturer first */
+   manufacturer_cmp = strcasecmp(manufacturer_a, manufacturer_b);
+   if (manufacturer_cmp != 0)
+      return manufacturer_cmp;
+   
+   /* Same manufacturer - compare by release year */
+   year_a = get_system_release_year(a->systemname);
+   year_b = get_system_release_year(b->systemname);
+   
+   if (year_a != year_b)
+      return year_a - year_b;  /* Earlier years first */
+   
+   /* Same year - compare by console name */
+   console_a = get_console_name(a->systemname);
+   console_b = get_console_name(b->systemname);
+   
+   manufacturer_cmp = strcasecmp(console_a, console_b);
+   if (manufacturer_cmp != 0)
+      return manufacturer_cmp;
+   
+   /* Same console - compare by emulator name */
+   return strcasecmp(extract_emulator_name(a->display_name), 
+                    extract_emulator_name(b->display_name));
+}
+
+/* New hierarchical sorting function */
+void core_info_qsort_hierarchical(core_info_list_t *core_info_list)
+{
+   if (!core_info_list || core_info_list->count < 2)
+      return;
+   
+   qsort(core_info_list->list,
+         core_info_list->count,
+         sizeof(core_info_t),
+         (int (*)(const void *, const void *))
+         hierarchical_core_compare);
+}
