@@ -47,7 +47,8 @@ enum core_info_list_qsort_type
    CORE_INFO_LIST_SORT_PATH = 0,
    CORE_INFO_LIST_SORT_DISPLAY_NAME,
    CORE_INFO_LIST_SORT_CORE_NAME,
-   CORE_INFO_LIST_SORT_SYSTEM_NAME
+   CORE_INFO_LIST_SORT_SYSTEM_NAME,
+   CORE_INFO_LIST_SORT_HIERARCHICAL
 };
 
 typedef struct
@@ -251,6 +252,11 @@ bool core_info_core_file_id_is_equal(const char *core_path_a, const char *core_p
  * next time that core info is initialised with
  * caching enabled */
 bool core_info_cache_force_refresh(const char *path_info);
+
+/* Hierarchical core listing helpers */
+int core_info_get_system_release_year(const char* systemname);
+const char* core_info_get_system_manufacturer(const char* systemname);
+const char* core_info_get_console_name(const char* systemname);
 
 RETRO_END_DECLS
 

@@ -1192,6 +1192,154 @@ static unsigned menu_displaylist_parse_core_backup_list(
    return count;
 }
 
+static unsigned menu_displaylist_parse_core_manager_list_hierarchical(file_list_t *list,
+      bool kiosk_mode_enable)
+{
+   unsigned count                   = 0;
+   core_info_list_t *core_info_list = NULL;
+
+   /* Get core list */
+   core_info_get_list(&core_info_list);
+
+   if (core_info_list)
+   {
+      size_t i;
+      size_t menu_index                = 0;
+      menu_search_terms_t *search_terms= menu_entries_search_get_terms();
+      const char* current_manufacturer = NULL;
+      const char* current_console      = NULL;
+      int current_year                 = 0;
+
+      /* Sort cores hierarchically */
+      core_info_qsort(core_info_list, CORE_INFO_LIST_SORT_HIERARCHICAL);
+
+      /* Loop through cores and add headers */
+      for (i = 0; i < core_info_list->count; i++)
+      {
+         core_info_t *core_info = core_info_get(core_info_list, i);
+
+         if (core_info)
+         {
+            /* If a search is active, skip non-matching entries */
+            if (search_terms)
+            {
+               bool entry_valid = true;
+               size_t j;
+
+               for (j = 0; j < search_terms->size; j++)
+               {
+                  const char *search_term = search_terms->terms[j];
+                  if (   !string_is_empty(search_term)
+                      && !string_is_empty(core_info->display_name)
+                      && !strcasestr(core_info->display_name, search_term))
+                  {
+                     entry_valid = false;
+                     break;
+                  }
+               }
+
+               if (!entry_valid)
+                  continue;
+            }
+
+            const char* manufacturer = core_info_get_system_manufacturer(core_info->systemname);
+            const char* console      = core_info_get_console_name(core_info->systemname);
+            int year                 = core_info_get_system_release_year(core_info->systemname);
+
+            /* Add manufacturer header if changed */
+            if (!current_manufacturer || !string_is_equal(current_manufacturer, manufacturer))
+            {
+               char header_text[128];
+               snprintf(header_text, sizeof(header_text), "--%s--", manufacturer);
+               
+               if (menu_entries_append(list,
+                     "",
+                     header_text,
+                     MENU_ENUM_LABEL_CORE_MANAGER_ENTRY,
+                     MENU_SETTING_NO_ITEM,
+                     0, 0, NULL))
+               {
+                  menu_index++;
+                  count++;
+               }
+               current_manufacturer = manufacturer;
+               current_console = NULL; /* Reset console when manufacturer changes */
+            }
+
+            /* Add console subheader if changed */
+            if (!current_console || !string_is_equal(current_console, console) || current_year != year)
+            {
+               char subheader_text[128];
+               if (year > 0)
+                  snprintf(subheader_text, sizeof(subheader_text), "  - %s (%d) -", console, year);
+               else
+                  snprintf(subheader_text, sizeof(subheader_text), "  - %s -", console);
+               
+               if (menu_entries_append(list,
+                     "",
+                     subheader_text,
+                     MENU_ENUM_LABEL_CORE_MANAGER_ENTRY,
+                     MENU_SETTING_NO_ITEM,
+                     0, 0, NULL))
+               {
+                  menu_index++;
+                  count++;
+               }
+               current_console = console;
+               current_year = year;
+            }
+
+            /* Extract emulator name from display name and create formatted entry */
+            char formatted_name[256];
+            const char* emulator_name = core_info->display_name;
+            
+            /* Try to extract just the emulator name after system prefix */
+            if (core_info->systemname && !string_is_empty(core_info->systemname))
+            {
+               /* Look for pattern like "Manufacturer - Console - Emulator" */
+               const char* first_dash = strchr(core_info->display_name, '-');
+               if (first_dash)
+               {
+                  const char* second_dash = strchr(first_dash + 1, '-');
+                  if (second_dash && second_dash[1] == ' ')
+                     emulator_name = second_dash + 2;
+               }
+            }
+
+            if (core_info->display_version && !string_is_empty(core_info->display_version))
+               snprintf(formatted_name, sizeof(formatted_name), "    %s – %s", emulator_name, core_info->display_version);
+            else
+               snprintf(formatted_name, sizeof(formatted_name), "    %s", emulator_name);
+
+            if (menu_entries_append(list,
+                     core_info->path,
+                     "",
+                     MENU_ENUM_LABEL_CORE_MANAGER_ENTRY,
+                     MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS,
+                     0, 0, NULL))
+            {
+               file_list_set_alt_at_offset(list, menu_index, formatted_name);
+               menu_index++;
+               count++;
+            }
+         }
+      }
+   }
+
+#ifndef IOS
+   /* Add 'sideload core' entry */
+   if (!kiosk_mode_enable)
+      if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST),
+            MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+#endif
+
+   return count;
+}
+
 static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
       bool kiosk_mode_enable)
 {
@@ -13947,7 +14095,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                static size_t prev_count   = 0;
                size_t selection           = menu_st->selection_ptr;
                menu_entries_clear(info->list);
-               count                    = menu_displaylist_parse_core_manager_list
+               count                    = menu_displaylist_parse_core_manager_list_hierarchical
                   (info->list, settings->bools.kiosk_mode_enable);
 
                if (count == 0)

@@ -2744,6 +2744,31 @@ static int core_info_qsort_func_system_name(const core_info_t *a,
    return strcasecmp(a->systemname, b->systemname);
 }
 
+static int core_info_qsort_func_hierarchical(const core_info_t *a,
+      const core_info_t *b)
+{
+   if (!a || !b)
+      return 0;
+
+   /* First sort by manufacturer */
+   const char* mfg_a = core_info_get_system_manufacturer(a->systemname);
+   const char* mfg_b = core_info_get_system_manufacturer(b->systemname);
+   int mfg_cmp = strcasecmp(mfg_a, mfg_b);
+   if (mfg_cmp != 0)
+      return mfg_cmp;
+
+   /* Then sort by release year */
+   int year_a = core_info_get_system_release_year(a->systemname);
+   int year_b = core_info_get_system_release_year(b->systemname);
+   if (year_a != year_b)
+      return year_a - year_b;
+
+   /* Finally sort by display name */
+   if (string_is_empty(a->display_name) || string_is_empty(b->display_name))
+      return 0;
+   return strcasecmp(a->display_name, b->display_name);
+}
+
 void core_info_qsort(core_info_list_t *core_info_list,
       enum core_info_list_qsort_type qsort_type)
 {
@@ -2782,6 +2807,13 @@ void core_info_qsort(core_info_list_t *core_info_list,
                sizeof(core_info_t),
                (int (*)(const void *, const void *))
                core_info_qsort_func_system_name);
+         break;
+      case CORE_INFO_LIST_SORT_HIERARCHICAL:
+         qsort(core_info_list->list,
+               core_info_list->count,
+               sizeof(core_info_t),
+               (int (*)(const void *, const void *))
+               core_info_qsort_func_hierarchical);
          break;
       default:
          break;
@@ -3057,4 +3089,228 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
    core_info->is_standalone_exempt    = false;
 #endif
    return false;
+}
+
+int core_info_get_system_release_year(const char* systemname)
+{
+   if (!systemname)
+      return 0;
+
+   /* Nintendo Systems */
+   if (string_is_equal(systemname, "Nintendo - NES"))
+      return 1983;
+   else if (string_is_equal(systemname, "Nintendo - Famicom"))
+      return 1983;
+   else if (string_is_equal(systemname, "Nintendo - SNES"))
+      return 1990;
+   else if (string_is_equal(systemname, "Nintendo - Super Famicom"))
+      return 1990;
+   else if (string_is_equal(systemname, "Nintendo - Game Boy"))
+      return 1989;
+   else if (string_is_equal(systemname, "Nintendo - Game Boy Color"))
+      return 1998;
+   else if (string_is_equal(systemname, "Nintendo - Game Boy Advance"))
+      return 2001;
+   else if (string_is_equal(systemname, "Nintendo - Nintendo 64"))
+      return 1996;
+   else if (string_is_equal(systemname, "Nintendo - GameCube"))
+      return 2001;
+   else if (string_is_equal(systemname, "Nintendo - Wii"))
+      return 2006;
+   else if (string_is_equal(systemname, "Nintendo - Wii U"))
+      return 2012;
+   else if (string_is_equal(systemname, "Nintendo - Switch"))
+      return 2017;
+   else if (string_is_equal(systemname, "Nintendo - Nintendo DS"))
+      return 2004;
+   else if (string_is_equal(systemname, "Nintendo - Nintendo 3DS"))
+      return 2011;
+   else if (string_is_equal(systemname, "Nintendo - Virtual Boy"))
+      return 1995;
+
+   /* Sony Systems */
+   else if (string_is_equal(systemname, "Sony - PlayStation"))
+      return 1994;
+   else if (string_is_equal(systemname, "Sony - PlayStation 2"))
+      return 2000;
+   else if (string_is_equal(systemname, "Sony - PlayStation 3"))
+      return 2006;
+   else if (string_is_equal(systemname, "Sony - PlayStation 4"))
+      return 2013;
+   else if (string_is_equal(systemname, "Sony - PlayStation 5"))
+      return 2020;
+   else if (string_is_equal(systemname, "Sony - PlayStation Portable"))
+      return 2004;
+   else if (string_is_equal(systemname, "Sony - PlayStation Vita"))
+      return 2011;
+
+   /* Sega Systems */
+   else if (string_is_equal(systemname, "Sega - SG-1000"))
+      return 1983;
+   else if (string_is_equal(systemname, "Sega - Master System"))
+      return 1985;
+   else if (string_is_equal(systemname, "Sega - Genesis"))
+      return 1988;
+   else if (string_is_equal(systemname, "Sega - Mega Drive"))
+      return 1988;
+   else if (string_is_equal(systemname, "Sega - Game Gear"))
+      return 1990;
+   else if (string_is_equal(systemname, "Sega - Saturn"))
+      return 1994;
+   else if (string_is_equal(systemname, "Sega - Dreamcast"))
+      return 1998;
+   else if (string_is_equal(systemname, "Sega - 32X"))
+      return 1994;
+   else if (string_is_equal(systemname, "Sega - CD"))
+      return 1991;
+
+   /* Microsoft Systems */
+   else if (string_is_equal(systemname, "Microsoft - Xbox"))
+      return 2001;
+   else if (string_is_equal(systemname, "Microsoft - Xbox 360"))
+      return 2005;
+   else if (string_is_equal(systemname, "Microsoft - Xbox One"))
+      return 2013;
+   else if (string_is_equal(systemname, "Microsoft - Xbox Series"))
+      return 2020;
+
+   /* Atari Systems */
+   else if (string_is_equal(systemname, "Atari - 2600"))
+      return 1977;
+   else if (string_is_equal(systemname, "Atari - 5200"))
+      return 1982;
+   else if (string_is_equal(systemname, "Atari - 7800"))
+      return 1986;
+   else if (string_is_equal(systemname, "Atari - Jaguar"))
+      return 1993;
+   else if (string_is_equal(systemname, "Atari - Lynx"))
+      return 1989;
+   else if (string_is_equal(systemname, "Atari - ST"))
+      return 1985;
+
+   /* NEC Systems */
+   else if (string_is_equal(systemname, "NEC - PC Engine"))
+      return 1987;
+   else if (string_is_equal(systemname, "NEC - PC Engine CD"))
+      return 1988;
+   else if (string_is_equal(systemname, "NEC - PC-FX"))
+      return 1994;
+   else if (string_is_equal(systemname, "NEC - SuperGrafx"))
+      return 1989;
+
+   /* SNK Systems */
+   else if (string_is_equal(systemname, "SNK - Neo Geo"))
+      return 1990;
+   else if (string_is_equal(systemname, "SNK - Neo Geo Pocket"))
+      return 1998;
+   else if (string_is_equal(systemname, "SNK - Neo Geo Pocket Color"))
+      return 1999;
+   else if (string_is_equal(systemname, "SNK - Neo Geo CD"))
+      return 1994;
+
+   /* Other Console Systems */
+   else if (string_is_equal(systemname, "Panasonic - 3DO"))
+      return 1993;
+   else if (string_is_equal(systemname, "Bandai - WonderSwan"))
+      return 1999;
+   else if (string_is_equal(systemname, "Bandai - WonderSwan Color"))
+      return 2000;
+   else if (string_is_equal(systemname, "Coleco - ColecoVision"))
+      return 1982;
+   else if (string_is_equal(systemname, "Mattel - Intellivision"))
+      return 1979;
+   else if (string_is_equal(systemname, "Magnavox - Odyssey2"))
+      return 1978;
+
+   /* Arcade Systems */
+   else if (string_is_equal(systemname, "MAME"))
+      return 1976;
+   else if (string_is_equal(systemname, "FinalBurn Neo"))
+      return 1976;
+   else if (string_is_equal(systemname, "Capcom - CPS1"))
+      return 1988;
+   else if (string_is_equal(systemname, "Capcom - CPS2"))
+      return 1993;
+   else if (string_is_equal(systemname, "Capcom - CPS3"))
+      return 1996;
+
+   /* Computer Systems */
+   else if (string_is_equal(systemname, "Commodore - 64"))
+      return 1982;
+   else if (string_is_equal(systemname, "Commodore - Amiga"))
+      return 1985;
+   else if (string_is_equal(systemname, "Commodore - VIC-20"))
+      return 1980;
+   else if (string_is_equal(systemname, "Amstrad - CPC"))
+      return 1984;
+   else if (string_is_equal(systemname, "Sinclair - ZX Spectrum"))
+      return 1982;
+   else if (string_is_equal(systemname, "MSX"))
+      return 1983;
+   else if (string_is_equal(systemname, "MSX2"))
+      return 1985;
+   else if (string_is_equal(systemname, "Apple - II"))
+      return 1977;
+
+   /* Default case for unknown systems */
+   return 0;
+}
+
+const char* core_info_get_system_manufacturer(const char* systemname)
+{
+   if (!systemname)
+      return "Other";
+
+   if (strncmp(systemname, "Nintendo", 8) == 0)
+      return "Nintendo";
+   else if (strncmp(systemname, "Sony", 4) == 0)
+      return "Sony";
+   else if (strncmp(systemname, "Sega", 4) == 0)
+      return "Sega";
+   else if (strncmp(systemname, "Microsoft", 9) == 0)
+      return "Microsoft";
+   else if (strncmp(systemname, "Atari", 5) == 0)
+      return "Atari";
+   else if (strncmp(systemname, "NEC", 3) == 0)
+      return "NEC";
+   else if (strncmp(systemname, "SNK", 3) == 0)
+      return "SNK";
+   else if (strncmp(systemname, "Panasonic", 9) == 0)
+      return "Panasonic";
+   else if (strncmp(systemname, "Bandai", 6) == 0)
+      return "Bandai";
+   else if (strncmp(systemname, "Capcom", 6) == 0)
+      return "Capcom";
+   else if (strncmp(systemname, "Commodore", 9) == 0)
+      return "Commodore";
+   else if (strncmp(systemname, "Amstrad", 7) == 0)
+      return "Amstrad";
+   else if (strncmp(systemname, "Sinclair", 8) == 0)
+      return "Sinclair";
+   else if (strncmp(systemname, "Apple", 5) == 0)
+      return "Apple";
+   else if (strncmp(systemname, "Coleco", 6) == 0)
+      return "Coleco";
+   else if (strncmp(systemname, "Mattel", 6) == 0)
+      return "Mattel";
+   else if (strncmp(systemname, "Magnavox", 8) == 0)
+      return "Magnavox";
+   else if (string_is_equal(systemname, "MAME") || string_is_equal(systemname, "FinalBurn Neo"))
+      return "Arcade";
+   else if (string_is_equal(systemname, "MSX") || string_is_equal(systemname, "MSX2"))
+      return "MSX";
+   else
+      return "Other";
+}
+
+const char* core_info_get_console_name(const char* systemname)
+{
+   if (!systemname)
+      return "Unknown";
+
+   const char* dash = strchr(systemname, '-');
+   if (dash && dash[1] == ' ')
+      return dash + 2;
+   
+   return systemname;
 }
